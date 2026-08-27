@@ -1,0 +1,12 @@
+# SnapMesh runtime dependencies (torch installed separately — see README)
+omegaconf==2.3.0
+einops==0.7.0
+transformers==4.46.3
+trimesh
+rembg
+onnxruntime
+huggingface-hub
+scikit-image
+fast-simplification
+pillow
+imageio

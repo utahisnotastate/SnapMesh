@@ -1,0 +1,13 @@
+# environments & caches
+.venv/
+__pycache__/
+*.pyc
+
+# vendored upstream (cloned + patched by patch_triposr.py, not committed)
+vendor/
+
+# model weights cache lives in ~/.cache/huggingface — nothing local to ignore
+
+# generated outputs
+*_snapmesh/
+outputs/

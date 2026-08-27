@@ -1,0 +1,66 @@
+# Syndicate: Zero-Point Tycoon — curated Kenney prop set
+# format: <obj path>|<OutputName>
+
+# --- planet exterior scatter (K2) ---
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/rock.obj|Prop_Rock_A
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/rock_largeA.obj|Prop_Rock_B
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/rock_largeB.obj|Prop_Rock_C
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/rocks_smallA.obj|Prop_RockSmall_A
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/rocks_smallB.obj|Prop_RockSmall_B
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/rock_crystals.obj|Prop_RockCrystal_A
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/rock_crystalsLargeA.obj|Prop_RockCrystal_B
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/rock_crystalsLargeB.obj|Prop_RockCrystal_C
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/crater.obj|Prop_Crater_A
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/craterLarge.obj|Prop_Crater_B
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/meteor.obj|Prop_Meteor_A
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/meteor_detailed.obj|Prop_Meteor_B
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/meteor_half.obj|Prop_Meteor_C
+
+# --- exterior landmarks (K2) ---
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/rocket_baseA.obj|Prop_RocketBase
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/rocket_sidesA.obj|Prop_RocketSides
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/rocket_topA.obj|Prop_RocketTop
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/machine_generator.obj|Prop_Generator
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/machine_generatorLarge.obj|Prop_GeneratorLarge
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/machine_wireless.obj|Prop_Antenna
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/machine_barrelLarge.obj|Prop_TankLarge
+
+# --- Commons: arcade corner (K3) ---
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Mini Arcade/Models/OBJ format/arcade-machine.obj|Prop_ArcadeCabinet
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Mini Arcade/Models/OBJ format/claw-machine.obj|Prop_ClawMachine
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Mini Arcade/Models/OBJ format/dance-machine.obj|Prop_DancePad
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Mini Arcade/Models/OBJ format/pinball.obj|Prop_Pinball
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Mini Arcade/Models/OBJ format/air-hockey.obj|Prop_AirHockey
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Mini Arcade/Models/OBJ format/prize-wheel.obj|Prop_PrizeWheel
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Mini Arcade/Models/OBJ format/vending-machine.obj|Prop_Vending
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Mini Arcade/Models/OBJ format/ticket-machine.obj|Prop_TicketMachine
+
+# --- Commons: lounge + snack bar (K3) ---
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Furniture Kit/Models/OBJ format/loungeSofa.obj|Prop_Sofa
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Furniture Kit/Models/OBJ format/loungeSofaCorner.obj|Prop_SofaCorner
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Furniture Kit/Models/OBJ format/loungeSofaLong.obj|Prop_SofaLong
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Furniture Kit/Models/OBJ format/loungeChair.obj|Prop_LoungeChair
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Furniture Kit/Models/OBJ format/tableCoffee.obj|Prop_TableCoffee
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Furniture Kit/Models/OBJ format/tableCoffeeGlass.obj|Prop_TableGlass
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Furniture Kit/Models/OBJ format/lampRoundFloor.obj|Prop_LampFloor
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Furniture Kit/Models/OBJ format/lampSquareFloor.obj|Prop_LampFloorSq
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Furniture Kit/Models/OBJ format/pottedPlant.obj|Prop_Plant
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Furniture Kit/Models/OBJ format/plantSmall1.obj|Prop_PlantSmall
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Furniture Kit/Models/OBJ format/rugRounded.obj|Prop_Rug
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Furniture Kit/Models/OBJ format/kitchenBar.obj|Prop_BarCounter
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Furniture Kit/Models/OBJ format/stoolBar.obj|Prop_BarStool
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Furniture Kit/Models/OBJ format/bookcaseClosed.obj|Prop_Shelf
+
+# --- room clutter (K4) ---
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/barrel.obj|Prop_Barrel
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/barrels.obj|Prop_Barrels
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/machine_barrel.obj|Prop_MachineBarrel
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/pipe_straight.obj|Prop_Pipe
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/pipe_ring.obj|Prop_PipeRing
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/desk_computerScreen.obj|Prop_Monitor
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/desk_computer.obj|Prop_ConsoleDesk
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Factory Kit/Models/OBJ format/box-large.obj|Prop_Crate
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Factory Kit/Models/OBJ format/box-small.obj|Prop_CrateSmall
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/desk_chairStool.obj|Prop_Stool
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/structure_closed.obj|Prop_StructureBlock
+C:/Syndicate_Dev/Kenney Game Assets All-in-1 3.7.0/3D assets/Space Kit/Models/OBJ format/satelliteDish.obj|Prop_SatDish

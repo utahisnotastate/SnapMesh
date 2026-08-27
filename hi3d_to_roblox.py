@@ -95,10 +95,23 @@ def prepare_input(src: Path, out_dir: Path, name: str) -> "tuple[Path, dict]":
         maps["normal"] = p
         log(f"  normal         {nrm.width}x{nrm.height} -> {p.name}")
 
+    # include_texture=True is load-bearing: with it False, trimesh omits the `vt`
+    # lines entirely, and texture-aware decimation on a UV-less mesh crashes
+    # pymeshlab natively (empty traceback). We ignore the sidecar .mtl it writes —
+    # the maps were already extracted above — but we need the UVs it brings.
     obj_path = out_dir / f"{name}_source.obj"
-    mesh.export(str(obj_path), include_texture=False)
-    log(f"  mesh           {len(mesh.vertices):,} verts / {len(mesh.faces):,} tris "
-        f"-> {obj_path.name}")
+    mesh.export(str(obj_path), include_texture=True, mtl_name=f"{name}_source.mtl")
+
+    with open(obj_path, "r", encoding="utf-8", errors="ignore") as fh:
+        uv_lines = sum(1 for line in fh if line.startswith("vt "))
+    if uv_lines == 0:
+        raise RuntimeError(
+            f"{obj_path.name} exported without UVs — texture-aware decimation "
+            "requires them. Check that the source model is UV unwrapped."
+        )
+
+    log(f"  mesh           {len(mesh.vertices):,} verts / {len(mesh.faces):,} tris, "
+        f"{uv_lines:,} UVs -> {obj_path.name}")
     return obj_path, maps
 
 

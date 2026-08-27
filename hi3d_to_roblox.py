@@ -34,6 +34,74 @@ def log(msg: str) -> None:
     print(f"[hi3d] {msg}", flush=True)
 
 
+def prepare_input(src: Path, out_dir: Path, name: str) -> "tuple[Path, dict]":
+    """Normalise any supported input into (obj_path, {map_kind: path}).
+
+    GLB/glTF keeps geometry AND its whole PBR texture set in one binary blob, which
+    is why it's the preferred download format — but pymeshlab's decimator wants a
+    plain mesh file and textures on disk. Unpack once here so the rest of the
+    pipeline is format-agnostic. OBJ input passes straight through.
+
+    Importantly, glTF packs roughness and metalness into ONE image
+    (metallicRoughnessTexture: G=roughness, B=metalness, per the glTF 2.0 spec).
+    Roblox wants them as two separate greyscale maps, so we split the channels.
+    Authored maps from the generator beat anything derived heuristically from the
+    albedo, so these take priority downstream.
+    """
+    maps: dict = {}
+    if src.suffix.lower() not in (".glb", ".gltf"):
+        return src, maps
+
+    import trimesh
+
+    log(f"unpacking {src.suffix.upper()} -> obj + PBR maps ...")
+    scene = trimesh.load(str(src), process=False)
+    mesh = (trimesh.util.concatenate(tuple(scene.geometry.values()))
+            if isinstance(scene, trimesh.Scene) else scene)
+
+    mat = getattr(mesh.visual, "material", None)
+
+    def grab(attr):
+        return getattr(mat, attr, None) if mat is not None else None
+
+    base = grab("baseColorTexture") or grab("image")
+    if base is not None:
+        p = out_dir / f"{name}_source_diffuse.png"
+        base.convert("RGB").save(p)
+        maps["color"] = p
+        log(f"  baseColor      {base.width}x{base.height} -> {p.name}")
+    else:
+        log("  WARNING: no baseColor texture in the glTF material")
+
+    mr = grab("metallicRoughnessTexture")
+    if mr is not None:
+        import numpy as np
+        from PIL import Image as PILImage
+
+        arr = np.asarray(mr.convert("RGB"))
+        rough = out_dir / f"{name}_source_roughness.png"
+        metal = out_dir / f"{name}_source_metalness.png"
+        PILImage.fromarray(np.repeat(arr[:, :, 1:2], 3, axis=2)).save(rough)
+        PILImage.fromarray(np.repeat(arr[:, :, 2:3], 3, axis=2)).save(metal)
+        maps["roughness"] = rough
+        maps["metalness"] = metal
+        log(f"  metalRough     {mr.width}x{mr.height} -> split into "
+            f"{rough.name} (G) + {metal.name} (B)")
+
+    nrm = grab("normalTexture")
+    if nrm is not None:
+        p = out_dir / f"{name}_source_normal.png"
+        nrm.convert("RGB").save(p)
+        maps["normal"] = p
+        log(f"  normal         {nrm.width}x{nrm.height} -> {p.name}")
+
+    obj_path = out_dir / f"{name}_source.obj"
+    mesh.export(str(obj_path), include_texture=False)
+    log(f"  mesh           {len(mesh.vertices):,} verts / {len(mesh.faces):,} tris "
+        f"-> {obj_path.name}")
+    return obj_path, maps
+
+
 def decimate_with_uvs(obj_path: Path, target_tris: int, out_obj: Path) -> None:
     """Texture-aware quadric edge collapse. Preserves UV parameterization."""
     import pymeshlab
@@ -241,7 +309,10 @@ def main() -> int:
     out_dir = args.out or (src_dir / "roblox_ready")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    texture = args.texture
+    # GLB/glTF carries its textures inside the file; OBJ leaves them loose on disk.
+    source_mesh, embedded = prepare_input(args.obj, out_dir, name)
+
+    texture = args.texture or embedded.get("color")
     if texture is None:
         for pattern in ("diffuse*", "*albedo*", "*basecolor*", "*.jpg", "*.png"):
             hits = sorted(src_dir.glob(pattern))
@@ -250,7 +321,7 @@ def main() -> int:
                 break
 
     decimated = out_dir / f"{name}.obj"
-    decimate_with_uvs(args.obj, args.tris, decimated)
+    decimate_with_uvs(source_mesh, args.tris, decimated)
 
     texture_name = f"{name}_diffuse.png"
     if texture and texture.exists():
@@ -258,6 +329,13 @@ def main() -> int:
     else:
         log("WARNING: no diffuse texture found in source folder")
         texture_name = "(none)"
+
+    # Authored PBR maps from the generator beat heuristics derived from the albedo,
+    # so pass them through at the Roblox texture ceiling when they exist.
+    for kind in ("roughness", "metalness", "normal"):
+        if kind in embedded:
+            downsample_texture(embedded[kind], out_dir / f"{name}_{kind}.png",
+                               args.texture_size)
 
     normalize_and_export(decimated, out_dir, name, args.height, texture_name,
                          crease_deg=args.crease)

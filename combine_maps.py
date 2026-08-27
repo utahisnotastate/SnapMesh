@@ -62,11 +62,30 @@ def blend_normals(baked: np.ndarray, derived: np.ndarray,
     return np.clip(out * 0.5 + 0.5, 0.0, 1.0)
 
 
-def apply_ao(color: np.ndarray, ao: np.ndarray, strength: float) -> np.ndarray:
-    a = ao[..., :1]
-    # Guard against bake failures: rays that hit nothing come back pure black,
-    # which would punch holes in the albedo. Lift the floor before multiplying.
-    a = np.clip(a, 0.35, 1.0)
+def apply_ao(color: np.ndarray, ao: np.ndarray, strength: float,
+             normalize: bool = True) -> np.ndarray:
+    """Multiply baked AO into the albedo (Roblox SurfaceAppearance has no AO slot).
+
+    The critical step is white-point normalisation. A baked AO map almost never
+    reaches pure white on flat, unoccluded surfaces — it plateaus around 0.85-0.95.
+    Multiplying that straight into the albedo scales down EVERY pixel, which is what
+    reads as a washed-out, desaturated result. Stretching the high end back to 1.0
+    (the numpy equivalent of pulling a ColorRamp's white slider inward) means only
+    genuinely occluded pixels darken.
+    """
+    a = ao[..., :1].astype(np.float32)
+
+    if normalize:
+        # 99th percentile, not max: immune to a few stray blown-out texels.
+        hi = float(np.percentile(a, 99.0))
+        lo = float(np.percentile(a, 1.0))
+        if hi > lo + 1e-4:
+            a = (a - lo) / (hi - lo)
+        log(f"AO white point normalised (was {lo:.3f}..{hi:.3f})")
+
+    # Rays that escape geometry entirely return black; without a floor those become
+    # holes punched through the albedo.
+    a = np.clip(a, 0.25, 1.0)
     a = 1.0 - (1.0 - a) * strength
     return np.clip(color * a, 0.0, 1.0)
 
@@ -82,6 +101,8 @@ def main() -> int:
     ap.add_argument("--baked-weight", type=float, default=1.0)
     ap.add_argument("--derived-weight", type=float, default=0.7)
     ap.add_argument("--ao-strength", type=float, default=0.55)
+    ap.add_argument("--no-ao-normalize", action="store_true",
+                    help="skip AO white-point normalisation (not recommended)")
     args = ap.parse_args()
 
     if args.baked and args.derived:
@@ -92,7 +113,7 @@ def main() -> int:
     elif args.ao and args.color:
         c = load_rgb(args.color, args.size)
         a = load_rgb(args.ao, args.size)
-        out = apply_ao(c, a, args.ao_strength)
+        out = apply_ao(c, a, args.ao_strength, normalize=not args.no_ao_normalize)
         log(f"applied AO to color (strength {args.ao_strength})")
     else:
         ap.error("provide --baked+--derived, or --ao+--color")

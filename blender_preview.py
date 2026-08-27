@@ -65,12 +65,32 @@ def build_material(args) -> bpy.types.Material:
     return mat
 
 
-def three_point(target_z: float, radius: float) -> None:
+def world_bbox_center(obj) -> "tuple[float, float, float]":
+    """True world-space centre. NB: obj.location is the ORIGIN, which for an
+    imported OBJ is usually not the centre of the geometry — assuming otherwise
+    aims the camera off the model entirely."""
+    import mathutils
+    cs = [obj.matrix_world @ mathutils.Vector(c) for c in obj.bound_box]
+    xs = [c.x for c in cs]; ys = [c.y for c in cs]; zs = [c.z for c in cs]
+    return ((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, (min(zs) + max(zs)) / 2)
+
+
+def aim_at(obj, target) -> None:
+    """Point an object at a target using a Track To constraint (robust; avoids
+    hand-rolled euler math, which is easy to get subtly wrong)."""
+    c = obj.constraints.new("TRACK_TO")
+    c.target = target
+    c.track_axis = "TRACK_NEGATIVE_Z"
+    c.up_axis = "UP_Y"
+
+
+def three_point(target, center, radius: float) -> None:
     """Key / fill / rim — reads hard-surface detail far better than a single lamp."""
+    cx, cy, cz = center
     specs = [
-        ("Key", (radius * 1.4, -radius * 1.4, radius * 1.7), 900.0),
-        ("Fill", (-radius * 1.8, -radius * 0.9, radius * 0.7), 260.0),
-        ("Rim", (-radius * 0.6, radius * 2.0, radius * 1.5), 700.0),
+        ("Key", (cx + radius * 1.4, cy - radius * 1.4, cz + radius * 1.7), 900.0),
+        ("Fill", (cx - radius * 1.8, cy - radius * 0.9, cz + radius * 0.7), 260.0),
+        ("Rim", (cx - radius * 0.6, cy + radius * 2.0, cz + radius * 1.5), 700.0),
     ]
     for name, loc, power in specs:
         d = bpy.data.lights.new(name, type="AREA")
@@ -79,10 +99,7 @@ def three_point(target_z: float, radius: float) -> None:
         o = bpy.data.objects.new(name, d)
         o.location = loc
         bpy.context.collection.objects.link(o)
-        # aim at the model's mid-height
-        dx, dy, dz = -loc[0], -loc[1], target_z - loc[2]
-        o.rotation_euler = (math.atan2(math.hypot(dx, dy), -dz), 0,
-                            math.atan2(dy, dx) + math.pi / 2)
+        aim_at(o, target)
 
 
 def main() -> None:
@@ -129,28 +146,37 @@ def main() -> None:
 
     obj.data.materials.clear()
     obj.data.materials.append(build_material(args))
+    # The imported OBJ already carries per-corner normals (crease-aware, written by
+    # our exporter), so plain smooth shading respects them. Note: `use_auto_smooth`
+    # was removed in Blender 4.1 — don't reintroduce it here.
     bpy.ops.object.shade_smooth()
-    obj.data.use_auto_smooth = True if hasattr(obj.data, "use_auto_smooth") else None
 
     radius = max(obj.dimensions)
-    mid_z = obj.location.z + obj.dimensions.z * 0.5
-    three_point(mid_z, radius)
+    center = world_bbox_center(obj)
+    log(f"model dims {tuple(round(d, 3) for d in obj.dimensions)}, "
+        f"centre {tuple(round(c, 3) for c in center)}")
+
+    target = bpy.data.objects.new("AimTarget", None)
+    target.location = center
+    bpy.context.collection.objects.link(target)
+
+    three_point(target, center, radius)
 
     cam_data = bpy.data.cameras.new("Cam")
     cam_data.lens = 60
     cam = bpy.data.objects.new("Cam", cam_data)
     bpy.context.collection.objects.link(cam)
     scene.camera = cam
+    aim_at(cam, target)
 
+    cx, cy, cz = center
     base, ext = os.path.splitext(args.out)
     for i in range(args.views):
-        ang = math.radians(35 + i * (360.0 / max(args.views, 1)) * 0.28)
-        dist = radius * 2.6
-        cam.location = (math.sin(ang) * dist, -math.cos(ang) * dist, mid_z + radius * 0.55)
-        dx, dy = -cam.location[0], -cam.location[1]
-        dz = mid_z - cam.location[2]
-        cam.rotation_euler = (math.atan2(math.hypot(dx, dy), -dz), 0,
-                              math.atan2(dy, dx) + math.pi / 2)
+        ang = math.radians(35 + i * 55.0)
+        dist = radius * 2.3
+        cam.location = (cx + math.sin(ang) * dist,
+                        cy - math.cos(ang) * dist,
+                        cz + radius * 0.45)
         path = args.out if args.views == 1 else f"{base}_{i}{ext}"
         scene.render.filepath = path
         log(f"rendering view {i + 1}/{args.views} -> {os.path.basename(path)}")

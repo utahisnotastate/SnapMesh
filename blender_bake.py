@@ -50,6 +50,12 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--samples", type=int, default=8)
     ap.add_argument("--extrusion", type=float, default=None,
                     help="cage extrusion in scene units (default: 2%% of mesh size)")
+    ap.add_argument("--ray-distance", type=float, default=None,
+                    help="max ray distance (default: just past the extrusion)")
+    ap.add_argument("--no-cage", action="store_true",
+                    help="use scalar extrusion instead of an explicit cage mesh")
+    ap.add_argument("--no-float", action="store_true",
+                    help="bake to 8-bit instead of 32-bit float")
     return ap.parse_args(argv)
 
 
@@ -77,14 +83,61 @@ def import_obj(path: str, name: str):
         obj = new[0]
 
     obj.name = name
+
+    # Two prep steps that materially affect bake quality:
+    #  1. Normals must face outward. An inverted face bakes a garbage ray hit.
+    #  2. The LOW-poly must be smooth-shaded BEFORE baking: its shading defines the
+    #     tangent basis the tangent-space normal map is written into. Baking against
+    #     flat per-face tangents encodes a discontinuity at every edge, which shows
+    #     up as "crinkly" noise across the surface.
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.mesh.normals_make_consistent(inside=False)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.shade_smooth()
+
     log(f"imported {name}: {len(obj.data.polygons):,} polys, "
-        f"{len(obj.data.uv_layers)} uv layer(s)")
+        f"{len(obj.data.uv_layers)} uv layer(s), normals fixed + smooth shaded")
     return obj
 
 
-def setup_bake_material(low, size: int):
-    """Give the low-poly a material whose active node is the target image."""
-    img = bpy.data.images.new(f"bake_target", width=size, height=size, alpha=False)
+def make_cage(low, offset: float):
+    """Build an explicit cage: a copy of the low-poly pushed out along its normals.
+
+    More robust than a scalar `cage_extrusion`, which offsets along the low-poly's
+    interpolated normals only at ray-cast time. A real cage mesh gives every ray a
+    well-defined start point and direction, which matters on beveled or concave
+    areas where a naive offset can send rays into neighbouring geometry.
+    """
+    mesh = low.data.copy()
+    cage = bpy.data.objects.new("BakeCage", mesh)
+    cage.matrix_world = low.matrix_world.copy()
+    bpy.context.collection.objects.link(cage)
+
+    disp = cage.modifiers.new("CageOffset", type="DISPLACE")
+    disp.direction = "NORMAL"
+    disp.mid_level = 0.0
+    disp.strength = offset
+
+    bpy.ops.object.select_all(action="DESELECT")
+    cage.select_set(True)
+    bpy.context.view_layer.objects.active = cage
+    bpy.ops.object.modifier_apply(modifier=disp.name)
+    return cage
+
+
+def setup_bake_material(low, size: int, float_buffer: bool = True):
+    """Give the low-poly a material whose active node is the target image.
+
+    float_buffer: bake into 32-bit float. An 8-bit target quantises each channel to
+    256 steps, and that stepping compounds through the later blend math into visible
+    banding. We bake in float and only quantise once, at PNG write.
+    """
+    img = bpy.data.images.new("bake_target", width=size, height=size, alpha=False,
+                              float_buffer=float_buffer, is_data=True)
     img.colorspace_settings.name = "Non-Color"  # normals/AO are data, not sRGB
 
     mat = bpy.data.materials.new("BakeMat")
@@ -134,20 +187,39 @@ def main() -> None:
     if not low.data.uv_layers:
         raise RuntimeError("low-poly has no UV map — cannot bake into UV space")
 
-    img, node = setup_bake_material(low, args.size)
+    img, node = setup_bake_material(low, args.size, float_buffer=not args.no_float)
 
     # Extrusion: the ray must start outside the high-poly surface and travel inward.
     # Scale to the model so this works for a 2-stud prop or a 200-stud building.
     dims = max(low.dimensions)
     extrusion = args.extrusion if args.extrusion is not None else max(dims * 0.02, 1e-4)
-    log(f"mesh size {dims:.3f}, cage extrusion {extrusion:.4f}")
+    # Keep the ray short — a long max distance lets rays sail past the high-poly surface
+    # and latch onto unrelated geometry across the model, which reads as noise.
+    ray_distance = args.ray_distance if args.ray_distance is not None else extrusion * 1.05
+    log(f"mesh size {dims:.3f}, cage extrusion {extrusion:.4f}, "
+        f"max ray distance {ray_distance:.4f}")
 
     bake = scene.render.bake
     bake.use_selected_to_active = True
     bake.cage_extrusion = extrusion
-    bake.max_ray_distance = extrusion * 2.0
+    bake.max_ray_distance = ray_distance
     bake.use_clear = True
     bake.margin = 16  # bleed past UV island edges to avoid seams under mipmapping
+
+    # Roblox samples tangent-space normal maps with the OpenGL (+Y up) convention,
+    # which is Blender's default — set explicitly so a future default change or a
+    # DirectX-targeted fork can't silently invert the green channel.
+    bake.normal_space = "TANGENT"
+    bake.normal_r = "POS_X"
+    bake.normal_g = "POS_Y"
+    bake.normal_b = "POS_Z"
+
+    cage = None
+    if not args.no_cage:
+        cage = make_cage(low, extrusion)
+        bake.use_cage = True
+        bake.cage_object = cage
+        log(f"using explicit cage mesh (offset {extrusion:.4f})")
 
     def run(bake_type: str, out_name: str, colorspace: str):
         node.image = img
@@ -158,7 +230,11 @@ def main() -> None:
         bpy.context.view_layer.objects.active = low   # target must be ACTIVE
         log(f"baking {bake_type} at {args.size}x{args.size} ...")
         kwargs = dict(type=bake_type, use_selected_to_active=True,
-                      cage_extrusion=extrusion, margin=bake.margin, use_clear=True)
+                      cage_extrusion=extrusion, max_ray_distance=ray_distance,
+                      margin=bake.margin, use_clear=True)
+        if cage is not None:
+            kwargs["use_cage"] = True
+            kwargs["cage_object"] = cage.name
         if bake_type == "NORMAL":
             kwargs["normal_space"] = "TANGENT"
         bpy.ops.object.bake(**kwargs)
@@ -170,6 +246,11 @@ def main() -> None:
 
     run("NORMAL", f"{args.name}_normal_baked.png", "Non-Color")
     run("AO", f"{args.name}_ao_baked.png", "Non-Color")
+
+    if cage is not None:
+        mesh = cage.data
+        bpy.data.objects.remove(cage, do_unlink=True)
+        bpy.data.meshes.remove(mesh, do_unlink=True)
 
     log("done.")
 
